@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Box, Typography, Grid, Paper } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 import RepeatIcon from '@mui/icons-material/Repeat';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -25,6 +25,9 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
         start: startDate,
         end: endDate
     });
+
+    // Calculate number of weeks to display
+    const numberOfWeeks = Math.ceil(days.length / 7);
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -52,17 +55,15 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
             {/* Weekday headers */}
-            <Grid container sx={{ borderBottom: '1px solid #e0e0e0' }}>
+            <Box sx={{ display: 'flex', borderBottom: '1px solid #e0e0e0' }}>
                 {weekDays.map(day => (
-                    <Grid item xs={12 / 7} key={day}>
-                        <Box sx={{ p: 1, textAlign: 'center' }}>
-                            <Typography variant="caption" fontWeight="bold" color="text.secondary">
-                                {day}
-                            </Typography>
-                        </Box>
-                    </Grid>
+                    <Box key={day} sx={{ flex: '1 1 0%', p: 1, textAlign: 'center' }}>
+                        <Typography variant="caption" fontWeight="bold" color="text.secondary">
+                            {day}
+                        </Typography>
+                    </Box>
                 ))}
-            </Grid>
+            </Box>
 
             {/* Calendar grid */}
             <Box sx={{ flex: 1, display: 'flex', flexWrap: 'wrap' }}>
@@ -76,8 +77,9 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
                             key={day.toString()}
                             onClick={() => onDateClick(day)}
                             sx={{
-                                width: `${100 / 7}%`,
-                                height: 'calc(100% / 5)', // Assuming 5 weeks usually
+                                flex: '1 1 calc(100% / 7)',
+                                maxWidth: 'calc(100% / 7)',
+                                height: `calc(100% / ${numberOfWeeks})`,
                                 borderRight: '1px solid #e0e0e0',
                                 borderBottom: '1px solid #e0e0e0',
                                 p: 1,
@@ -86,7 +88,8 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
                                 '&:hover': {
                                     bgcolor: '#f5f5f5'
                                 },
-                                overflow: 'hidden'
+                                overflow: 'hidden',
+                                boxSizing: 'border-box'
                             }}
                         >
                             <Box sx={{ textAlign: 'center', mb: 1 }}>

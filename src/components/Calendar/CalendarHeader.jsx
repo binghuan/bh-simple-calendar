@@ -69,7 +69,8 @@ const CalendarHeader = ({
             </Stack>
 
             <Stack direction="row" spacing={2}>
-                <FormControl size="small">
+                {/* View selector temporarily hidden - Week and Day views need width fix */}
+                {/* <FormControl size="small">
                     <Select
                         value={view}
                         onChange={(e) => onViewChange(e.target.value)}
@@ -79,7 +80,7 @@ const CalendarHeader = ({
                         <MenuItem value="week">Week</MenuItem>
                         <MenuItem value="day">Day</MenuItem>
                     </Select>
-                </FormControl>
+                </FormControl> */}
             </Stack>
         </Box>
     );
