@@ -18,7 +18,7 @@ import RepeatOneIcon from '@mui/icons-material/RepeatOne';
 import FastForwardIcon from '@mui/icons-material/FastForward';
 
 /**
- * 編輯選項對話框 - 用於選擇編輯重複事件的範圍
+ * Edit Options Dialog - For selecting the scope of editing recurring events
  */
 const EditOptionsDialog = ({ open, onClose, onSelect, mode = 'edit' }) => {
     const isDelete = mode === 'delete';
@@ -43,7 +43,7 @@ const EditOptionsDialog = ({ open, onClose, onSelect, mode = 'edit' }) => {
         },
     ];
 
-    // 刪除模式額外提供「這個及之後」選項
+    // Delete mode provides additional "this and future" option
     if (isDelete) {
         options.splice(1, 0, {
             id: 'this_and_future',

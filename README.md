@@ -1,4 +1,4 @@
-# MySimpleCalendar
+# bh-simple-calendar
 
 A simple and elegant calendar application built with React. All data is stored locally in the browser using IndexedDB - no backend server required!
 

@@ -24,7 +24,7 @@ function App() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // 初始化 IndexedDB
+  // Initialize IndexedDB
   useEffect(() => {
     const initDB = async () => {
       try {
@@ -39,7 +39,7 @@ function App() {
     initDB();
   }, []);
 
-  // 資料庫初始化後載入日曆
+  // Load calendars after database initialization
   useEffect(() => {
     if (dbInitialized) {
       fetchCalendars();
@@ -70,12 +70,12 @@ function App() {
       // Get all events including exceptions
       const response = await eventsAPI.getAll({ include_exceptions: true });
       
-      // API 現在返回 { events, exceptions } 格式
+      // API now returns { events, exceptions } format
       if (response.data.events && response.data.exceptions) {
         setEvents(response.data.events);
         setExceptions(response.data.exceptions);
       } else {
-        // 向後兼容：如果 API 返回舊格式
+        // Backward compatibility: if API returns old format
         setEvents(Array.isArray(response.data) ? response.data : []);
         setExceptions([]);
       }
@@ -143,7 +143,7 @@ function App() {
     }
   };
 
-  // 儲存例外實例（只修改這一天）
+  // Save exception instance (only modify this day)
   const handleSaveException = async (parentId, exceptionData) => {
     try {
       await eventsAPI.createException(parentId, exceptionData);
@@ -154,7 +154,7 @@ function App() {
     }
   };
 
-  // 刪除事件（支援不同的刪除類型）
+  // Delete event (supports different delete types)
   const handleDeleteEvent = async (id, deleteType = 'all', instanceDate = null) => {
     const confirmMessages = {
       'this_only': 'Are you sure you want to delete this occurrence?',
@@ -193,10 +193,10 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: 2 }}>
-          <Typography variant="h5" color="error">資料庫初始化失敗</Typography>
+          <Typography variant="h5" color="error">Database initialization failed</Typography>
           <Typography color="text.secondary">{initError}</Typography>
           <Typography variant="body2" color="text.secondary">
-            請確保您的瀏覽器支援 IndexedDB 並允許本網站儲存資料
+            Please ensure your browser supports IndexedDB and allows this site to store data
           </Typography>
         </Box>
       </ThemeProvider>

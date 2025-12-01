@@ -28,7 +28,7 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    // 展開重複事件（包含例外處理）
+    // Expand recurring events (including exception handling)
     const expandedEvents = useMemo(() => {
         const { start, end } = getMonthViewRange(currentDate);
         return expandEvents(events, start, end, exceptions);
@@ -122,14 +122,14 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
                                             display: 'flex',
                                             alignItems: 'center',
                                             gap: 0.5,
-                                            // 例外事件顯示不同樣式
+                                            // Exception events display different style
                                             border: event.isException ? '2px dashed rgba(255,255,255,0.5)' : 'none',
                                             '&:hover': {
                                                 filter: 'brightness(0.9)'
                                             }
                                         }}
                                     >
-                                        {/* 顯示重複圖示或例外圖示 */}
+                                        {/* Show repeat icon or exception icon */}
                                         {event.isException ? (
                                             <EditIcon sx={{ fontSize: '0.75rem', flexShrink: 0 }} />
                                         ) : (event.rrule || event.isRecurringInstance) && (

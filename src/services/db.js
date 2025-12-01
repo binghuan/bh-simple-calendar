@@ -1,6 +1,6 @@
 /**
- * IndexedDB 資料庫服務
- * 使用 HTML5 IndexedDB 來儲存日曆和事件資料
+ * IndexedDB Database Service
+ * Using HTML5 IndexedDB to store calendar and event data
  */
 
 const DB_NAME = 'MySimpleCalendarDB';
@@ -9,7 +9,7 @@ const DB_VERSION = 1;
 let db = null;
 
 /**
- * 初始化資料庫
+ * Initialize database
  */
 export function initDB() {
     return new Promise((resolve, reject) => {
@@ -34,7 +34,7 @@ export function initDB() {
         request.onupgradeneeded = (event) => {
             const database = event.target.result;
 
-            // 建立 calendars 物件存儲
+            // Create calendars object store
             if (!database.objectStoreNames.contains('calendars')) {
                 const calendarStore = database.createObjectStore('calendars', {
                     keyPath: 'id',
@@ -43,7 +43,7 @@ export function initDB() {
                 calendarStore.createIndex('name', 'name', { unique: false });
             }
 
-            // 建立 events 物件存儲
+            // Create events object store
             if (!database.objectStoreNames.contains('events')) {
                 const eventStore = database.createObjectStore('events', {
                     keyPath: 'id',
@@ -60,7 +60,7 @@ export function initDB() {
 }
 
 /**
- * 取得資料庫實例
+ * Get database instance
  */
 export async function getDB() {
     if (!db) {
@@ -70,7 +70,7 @@ export async function getDB() {
 }
 
 /**
- * 通用的資料庫操作封裝
+ * Generic database operation wrapper
  */
 class Store {
     constructor(storeName) {
@@ -109,14 +109,14 @@ class Store {
             const transaction = await this.getTransaction('readwrite');
             const store = transaction.objectStore(this.storeName);
             
-            // 加入時間戳記
+            // Add timestamps
             const record = {
                 ...data,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             };
             
-            // 移除 id 如果是 undefined 或 null，讓 autoIncrement 自動產生
+            // Remove id if undefined or null, let autoIncrement generate it
             if (record.id === undefined || record.id === null) {
                 delete record.id;
             }
@@ -183,18 +183,18 @@ class Store {
     }
 }
 
-// 匯出 Store 實例
+// Export Store instances
 export const calendarsStore = new Store('calendars');
 export const eventsStore = new Store('events');
 
 /**
- * 初始化預設日曆（如果沒有任何日曆）
+ * Initialize default calendars (if no calendars exist)
  */
 export async function initDefaultData() {
     const calendars = await calendarsStore.getAll();
     
     if (calendars.length === 0) {
-        // 建立預設日曆
+        // Create default calendars
         await calendarsStore.add({
             name: 'Personal',
             color: '#1976d2',
@@ -212,7 +212,7 @@ export async function initDefaultData() {
 }
 
 /**
- * 匯出資料（用於備份）
+ * Export data (for backup)
  */
 export async function exportData() {
     const calendars = await calendarsStore.getAll();
@@ -227,23 +227,23 @@ export async function exportData() {
 }
 
 /**
- * 匯入資料（用於還原）
+ * Import data (for restore)
  */
 export async function importData(data) {
     if (!data || !data.calendars || !data.events) {
         throw new Error('Invalid data format');
     }
     
-    // 清空現有資料
+    // Clear existing data
     await calendarsStore.clear();
     await eventsStore.clear();
     
-    // 匯入日曆
+    // Import calendars
     for (const calendar of data.calendars) {
         await calendarsStore.add(calendar);
     }
     
-    // 匯入事件
+    // Import events
     for (const event of data.events) {
         await eventsStore.add(event);
     }

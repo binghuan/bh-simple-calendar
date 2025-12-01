@@ -2,7 +2,7 @@ import { RRule } from 'rrule';
 import { startOfMonth, endOfMonth, addMonths, subMonths, format, parseISO, isSameDay } from 'date-fns';
 
 /**
- * 預設的重複選項
+ * Default recurrence options
  */
 export const RECURRENCE_OPTIONS = [
     { value: '', label: 'Does not repeat' },
@@ -15,7 +15,7 @@ export const RECURRENCE_OPTIONS = [
 ];
 
 /**
- * 頻率選項
+ * Frequency options
  */
 export const FREQUENCY_OPTIONS = [
     { value: RRule.DAILY, label: 'Day' },
@@ -25,7 +25,7 @@ export const FREQUENCY_OPTIONS = [
 ];
 
 /**
- * 星期選項
+ * Weekday options
  */
 export const WEEKDAY_OPTIONS = [
     { value: RRule.SU, label: 'Sun', short: 'S' },
@@ -38,19 +38,19 @@ export const WEEKDAY_OPTIONS = [
 ];
 
 /**
- * 從 RRule 字串解析出選項
- * @param {string} rruleString - RRule 字串
- * @returns {object} RRule 選項物件
+ * Parse RRule string into options object
+ * @param {string} rruleString - RRule string
+ * @returns {object} RRule options object
  */
 export function parseRRuleString(rruleString) {
     if (!rruleString) return null;
     
     try {
-        // 如果是完整的 RRULE 格式，直接解析
+        // If it's a complete RRULE format, parse directly
         if (rruleString.startsWith('RRULE:')) {
             return RRule.fromString(rruleString).options;
         }
-        // 如果只有規則部分，加上 RRULE: 前綴
+        // If only the rule part, add RRULE: prefix
         return RRule.fromString(`RRULE:${rruleString}`).options;
     } catch (error) {
         console.error('Error parsing RRule string:', error);
@@ -59,16 +59,16 @@ export function parseRRuleString(rruleString) {
 }
 
 /**
- * 建立 RRule 字串
- * @param {object} options - RRule 選項
- * @returns {string} RRule 字串（不含 RRULE: 前綴）
+ * Create RRule string
+ * @param {object} options - RRule options
+ * @returns {string} RRule string (without RRULE: prefix)
  */
 export function createRRuleString(options) {
     if (!options || !options.freq) return '';
     
     try {
         const rule = new RRule(options);
-        // 返回不含 RRULE: 前綴的字串
+        // Return string without RRULE: prefix
         return rule.toString().replace('RRULE:', '');
     } catch (error) {
         console.error('Error creating RRule string:', error);
@@ -77,9 +77,9 @@ export function createRRuleString(options) {
 }
 
 /**
- * 解析 exdates 字串為日期陣列
- * @param {string} exdatesString - 逗號分隔的日期字串
- * @returns {Date[]} 日期陣列
+ * Parse exdates string into date array
+ * @param {string} exdatesString - Comma-separated date string
+ * @returns {Date[]} Array of dates
  */
 export function parseExdates(exdatesString) {
     if (!exdatesString) return [];
@@ -98,9 +98,9 @@ export function parseExdates(exdatesString) {
 }
 
 /**
- * 檢查日期是否在排除列表中
- * @param {Date} date - 要檢查的日期
- * @param {Date[]} exdates - 排除日期陣列
+ * Check if date is in the exclusion list
+ * @param {Date} date - Date to check
+ * @param {Date[]} exdates - Array of excluded dates
  * @returns {boolean}
  */
 export function isDateExcluded(date, exdates) {
@@ -108,12 +108,21 @@ export function isDateExcluded(date, exdates) {
 }
 
 /**
- * 展開重複事件（考慮 exdates 和例外實例）
- * @param {object} event - 事件物件
- * @param {Date} rangeStart - 範圍開始日期
- * @param {Date} rangeEnd - 範圍結束日期
- * @param {array} exceptions - 例外實例陣列
- * @returns {array} 展開後的事件陣列
+ * Normalize date to midnight for comparison
+ * @param {Date} date - Date to normalize
+ * @returns {string} Normalized date string (yyyy-MM-dd)
+ */
+function normalizeDateForComparison(date) {
+    return format(date, 'yyyy-MM-dd');
+}
+
+/**
+ * Expand recurring event (considering exdates and exception instances)
+ * @param {object} event - Event object
+ * @param {Date} rangeStart - Range start date
+ * @param {Date} rangeEnd - Range end date
+ * @param {array} exceptions - Exception instances array
+ * @returns {array} Array of expanded events
  */
 export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = []) {
     if (!event.rrule) {
@@ -125,44 +134,65 @@ export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = [
         const eventEnd = new Date(event.end_time);
         const duration = eventEnd.getTime() - eventStart.getTime();
 
-        // 解析排除日期
+        // Parse excluded dates
         const exdates = parseExdates(event.exdates);
 
-        // 取得此事件的例外實例
+        // Get exception instances for this event
         const eventExceptions = exceptions.filter(ex => ex.parent_event_id === event.id);
 
-        // 建立 RRule
+        // Create RRule
         const rruleOptions = parseRRuleString(event.rrule);
         if (!rruleOptions) {
             return [event];
         }
 
-        // 設定 dtstart
+        // Set dtstart
         const rule = new RRule({
             ...rruleOptions,
             dtstart: eventStart,
         });
 
-        // 取得在範圍內的所有日期
+        // Get all dates within range
         const occurrences = rule.between(rangeStart, rangeEnd, true);
 
-        // 為每個出現建立事件實例（排除 exdates 中的日期）
+        // Create exception map (using normalized date string as key)
+        const exceptionMap = new Map();
+        for (const ex of eventExceptions) {
+            const originalStart = new Date(ex.original_start_time);
+            const dateKey = normalizeDateForComparison(originalStart);
+            exceptionMap.set(dateKey, ex);
+        }
+
+        // Create event instance for each occurrence (excluding dates in exdates)
         const instances = [];
         
         for (const occurrence of occurrences) {
-            // 檢查是否被排除
+            // Check if excluded (using isSameDay comparison)
             if (isDateExcluded(occurrence, exdates)) {
+                // Excluded date, but check if there's an exception instance to display
+                const occurrenceDateKey = normalizeDateForComparison(occurrence);
+                const exception = exceptionMap.get(occurrenceDateKey);
+                
+                if (exception) {
+                    // Has exception instance, display it
+                    instances.push({
+                        ...exception,
+                        isRecurringInstance: true,
+                        isException: true,
+                        parentEvent: event,
+                        instanceDate: occurrence,
+                    });
+                }
+                // If no exception instance, truly exclude this day
                 continue;
             }
 
-            // 檢查是否有例外實例
-            const exception = eventExceptions.find(ex => {
-                const originalStart = new Date(ex.original_start_time);
-                return isSameDay(originalStart, occurrence);
-            });
+            // Check if there's an exception instance (using normalized date comparison)
+            const occurrenceDateKey = normalizeDateForComparison(occurrence);
+            const exception = exceptionMap.get(occurrenceDateKey);
 
             if (exception) {
-                // 使用例外實例
+                // Use exception instance
                 instances.push({
                     ...exception,
                     isRecurringInstance: true,
@@ -171,11 +201,11 @@ export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = [
                     instanceDate: occurrence,
                 });
             } else {
-                // 使用正常實例
+                // Use normal instance
                 instances.push({
                     ...event,
-                    id: `${event.id}_${occurrence.getTime()}`, // 使用複合 ID
-                    originalId: event.id, // 保留原始 ID
+                    id: `${event.id}_${occurrence.getTime()}`, // Use composite ID
+                    originalId: event.id, // Keep original ID
                     start_time: occurrence.toISOString(),
                     end_time: new Date(occurrence.getTime() + duration).toISOString(),
                     isRecurringInstance: true,
@@ -193,23 +223,23 @@ export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = [
 }
 
 /**
- * 展開多個事件
- * @param {array} events - 事件陣列
- * @param {Date} rangeStart - 範圍開始日期
- * @param {Date} rangeEnd - 範圍結束日期
- * @param {array} exceptions - 所有例外實例
- * @returns {array} 展開後的事件陣列
+ * Expand multiple events
+ * @param {array} events - Events array
+ * @param {Date} rangeStart - Range start date
+ * @param {Date} rangeEnd - Range end date
+ * @param {array} exceptions - All exception instances
+ * @returns {array} Array of expanded events
  */
 export function expandEvents(events, rangeStart, rangeEnd, exceptions = []) {
     const expanded = [];
     
     for (const event of events) {
         if (event.rrule) {
-            // 重複事件 - 展開
+            // Recurring event - expand
             const instances = expandRecurringEvent(event, rangeStart, rangeEnd, exceptions);
             expanded.push(...instances);
         } else {
-            // 非重複事件 - 直接加入
+            // Non-recurring event - add directly
             expanded.push(event);
         }
     }
@@ -218,21 +248,21 @@ export function expandEvents(events, rangeStart, rangeEnd, exceptions = []) {
 }
 
 /**
- * 取得月視圖的日期範圍（包含前後月份的部分日期）
- * @param {Date} currentDate - 當前日期
+ * Get date range for month view (including partial dates from adjacent months)
+ * @param {Date} currentDate - Current date
  * @returns {object} { start, end }
  */
 export function getMonthViewRange(currentDate) {
-    // 擴展範圍以包含顯示在月視圖中的前後月份日期
+    // Extend range to include dates from adjacent months shown in month view
     const start = subMonths(startOfMonth(currentDate), 1);
     const end = addMonths(endOfMonth(currentDate), 1);
     return { start, end };
 }
 
 /**
- * 將 RRule 轉換為人類可讀的描述
- * @param {string} rruleString - RRule 字串
- * @returns {string} 人類可讀的描述
+ * Convert RRule to human-readable description
+ * @param {string} rruleString - RRule string
+ * @returns {string} Human-readable description
  */
 export function getRRuleDescription(rruleString) {
     if (!rruleString) return '';
@@ -250,9 +280,9 @@ export function getRRuleDescription(rruleString) {
 }
 
 /**
- * 格式化實例日期為 ISO 字串（用於 API）
- * @param {Date} date - 日期
- * @returns {string} ISO 格式日期字串
+ * Format instance date as ISO string (for API)
+ * @param {Date} date - Date
+ * @returns {string} ISO format date string
  */
 export function formatInstanceDate(date) {
     return format(date, "yyyy-MM-dd'T'HH:mm:ss");

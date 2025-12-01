@@ -1,12 +1,12 @@
 /**
- * API 服務層 - 使用 IndexedDB 作為本地資料庫
- * 不需要後端伺服器，所有資料儲存在瀏覽器中
+ * API Service Layer - Using IndexedDB as local database
+ * No backend server required, all data stored in browser
  */
 
 import { calendarsStore, eventsStore, initDB, initDefaultData } from './db';
 
 /**
- * 初始化資料庫
+ * Initialize database
  */
 export async function initializeDatabase() {
     await initDB();
@@ -14,7 +14,7 @@ export async function initializeDatabase() {
 }
 
 /**
- * Calendars API - 使用 IndexedDB
+ * Calendars API - Using IndexedDB
  */
 export const calendarsAPI = {
     getAll: async () => {
@@ -38,7 +38,7 @@ export const calendarsAPI = {
     },
     
     delete: async (id) => {
-        // 刪除日曆時，同時刪除該日曆下的所有事件
+        // When deleting a calendar, also delete all events under it
         const events = await eventsStore.getByIndex('calendar_id', id);
         for (const event of events) {
             await eventsStore.delete(event.id);
@@ -49,17 +49,17 @@ export const calendarsAPI = {
 };
 
 /**
- * Events API - 使用 IndexedDB
+ * Events API - Using IndexedDB
  */
 export const eventsAPI = {
     getAll: async (params = {}) => {
         let events = await eventsStore.getAll();
         
-        // 分離父事件和例外實例
+        // Separate parent events and exception instances
         const parentEvents = events.filter(e => !e.parent_event_id);
         const exceptions = events.filter(e => e.parent_event_id);
         
-        // 根據參數過濾
+        // Filter by parameters
         let filteredEvents = parentEvents;
         
         if (params.calendar_id) {
@@ -74,7 +74,7 @@ export const eventsAPI = {
             filteredEvents = filteredEvents.filter(e => new Date(e.end_time) <= new Date(params.end));
         }
         
-        // 返回格式與後端 API 相容
+        // Return format compatible with backend API
         if (params.include_exceptions !== 'false') {
             return { 
                 data: {
@@ -123,7 +123,7 @@ export const eventsAPI = {
         const { delete_type, instance_date } = params;
         
         if (delete_type === 'this_only' && instance_date && event.rrule) {
-            // 只刪除這一個實例 - 加入 exdates
+            // Delete only this instance - add to exdates
             let exdates = event.exdates ? event.exdates.split(',').filter(d => d) : [];
             if (!exdates.includes(instance_date)) {
                 exdates.push(instance_date);
@@ -135,7 +135,7 @@ export const eventsAPI = {
             return { data: { message: 'Instance excluded successfully' } };
             
         } else if (delete_type === 'this_and_future' && instance_date && event.rrule) {
-            // 刪除這個及之後的實例 - 修改 UNTIL
+            // Delete this and future instances - modify UNTIL
             const untilDate = new Date(instance_date);
             untilDate.setDate(untilDate.getDate() - 1);
             
@@ -157,7 +157,7 @@ export const eventsAPI = {
             return { data: { message: 'Future instances deleted successfully' } };
             
         } else {
-            // 刪除所有 - 刪除事件和其所有例外
+            // Delete all - delete event and all its exceptions
             const exceptions = await eventsStore.getByIndex('parent_event_id', id);
             for (const ex of exceptions) {
                 await eventsStore.delete(ex.id);
@@ -167,20 +167,20 @@ export const eventsAPI = {
         }
     },
     
-    // 取得重複事件的例外實例
+    // Get exception instances of recurring event
     getExceptions: async (parentId) => {
         const data = await eventsStore.getByIndex('parent_event_id', parentId);
         return { data };
     },
     
-    // 建立例外實例
+    // Create exception instance
     createException: async (parentId, exceptionData) => {
         const parent = await eventsStore.getById(parentId);
         if (!parent) {
             throw new Error('Parent event not found');
         }
         
-        // 檢查例外是否已存在
+        // Check if exception already exists
         const existingExceptions = await eventsStore.getByIndex('parent_event_id', parentId);
         const alreadyExists = existingExceptions.some(
             ex => ex.original_start_time === exceptionData.original_start_time
@@ -190,7 +190,7 @@ export const eventsAPI = {
             throw new Error('Exception already exists for this date');
         }
         
-        // 將原始日期加入父事件的 exdates
+        // Add original date to parent event's exdates
         let exdates = parent.exdates ? parent.exdates.split(',').filter(d => d) : [];
         if (!exdates.includes(exceptionData.original_start_time)) {
             exdates.push(exceptionData.original_start_time);
@@ -200,7 +200,7 @@ export const eventsAPI = {
             });
         }
         
-        // 建立例外實例
+        // Create exception instance
         const exception = await eventsStore.add({
             calendar_id: parent.calendar_id,
             title: exceptionData.title || parent.title,
@@ -210,7 +210,7 @@ export const eventsAPI = {
             all_day: exceptionData.all_day !== undefined ? (exceptionData.all_day ? 1 : 0) : parent.all_day,
             location: exceptionData.location !== undefined ? exceptionData.location : parent.location,
             color: exceptionData.color || parent.color,
-            rrule: '', // 例外實例沒有 rrule
+            rrule: '', // Exception instances don't have rrule
             parent_event_id: parentId,
             original_start_time: exceptionData.original_start_time
         });
@@ -219,7 +219,7 @@ export const eventsAPI = {
     },
 };
 
-// 為了向後相容，保留 default export
+// Keep default export for backward compatibility
 export default {
     calendarsAPI,
     eventsAPI,

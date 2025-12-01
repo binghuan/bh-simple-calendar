@@ -37,7 +37,7 @@ const RecurrenceDialog = ({ open, onClose, onSave, rruleString, startDate }) => 
     useEffect(() => {
         if (open) {
             if (rruleString) {
-                // 解析現有的 RRule
+                // Parse existing RRule
                 const options = parseRRuleString(rruleString);
                 if (options) {
                     setFrequency(options.freq || RRule.WEEKLY);
@@ -77,12 +77,12 @@ const RecurrenceDialog = ({ open, onClose, onSave, rruleString, startDate }) => 
             interval: interval,
         };
 
-        // 週重複時加入選定的星期
+        // Add selected weekdays for weekly recurrence
         if (frequency === RRule.WEEKLY && weekdays.length > 0) {
             options.byweekday = weekdays;
         }
 
-        // 結束條件
+        // End condition
         if (endType === 'count') {
             options.count = count;
         } else if (endType === 'until') {
@@ -103,7 +103,7 @@ const RecurrenceDialog = ({ open, onClose, onSave, rruleString, startDate }) => 
             <DialogTitle>Custom Recurrence</DialogTitle>
             <DialogContent>
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 1 }}>
-                    {/* 頻率與間隔 */}
+                    {/* Frequency and interval */}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Typography>Repeat every</Typography>
                         <TextField
@@ -128,7 +128,7 @@ const RecurrenceDialog = ({ open, onClose, onSave, rruleString, startDate }) => 
                         </FormControl>
                     </Box>
 
-                    {/* 週重複時顯示星期選擇 */}
+                    {/* Show weekday selection for weekly recurrence */}
                     {frequency === RRule.WEEKLY && (
                         <Box>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
@@ -155,7 +155,7 @@ const RecurrenceDialog = ({ open, onClose, onSave, rruleString, startDate }) => 
 
                     <Divider />
 
-                    {/* 結束條件 */}
+                    {/* End condition */}
                     <Box>
                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                             Ends

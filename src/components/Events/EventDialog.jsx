@@ -64,7 +64,7 @@ const EventDialog = ({
                 end_time: format(new Date(event.end_time), "yyyy-MM-dd'T'HH:mm"),
                 rrule: rrule,
             });
-            // 設定重複選項
+            // Set recurrence option
             if (rrule) {
                 const matchingOption = RECURRENCE_OPTIONS.find(opt => opt.value === rrule);
                 setSelectedRecurrence(matchingOption ? rrule : 'custom');
@@ -123,7 +123,7 @@ const EventDialog = ({
     };
 
     const handleSaveClick = () => {
-        // 如果是重複事件的實例（非例外），詢問要修改哪些
+        // If it's a recurring event instance (not exception), ask which ones to modify
         if (isRecurringInstance) {
             setPendingAction('save');
             setEditOptionsOpen(true);
@@ -133,12 +133,12 @@ const EventDialog = ({
     };
 
     const handleDeleteClick = () => {
-        // 如果是重複事件的實例，詢問要刪除哪些
+        // If it's a recurring event instance, ask which ones to delete
         if (isRecurringInstance || (isException && event.parentEvent)) {
             setPendingAction('delete');
             setDeleteOptionsOpen(true);
         } else if (hasRecurrence && !isException) {
-            // 主重複事件，詢問刪除選項
+            // Main recurring event, ask for delete options
             setPendingAction('delete');
             setDeleteOptionsOpen(true);
         } else {
@@ -162,7 +162,7 @@ const EventDialog = ({
 
     const doSave = (editType) => {
         if (editType === 'this_only' && isRecurringInstance) {
-            // 只修改這一個實例 - 建立例外
+            // Only modify this instance - create exception
             const parentId = event.originalId || event.parentEvent?.id;
             const instanceDate = event.instanceDate 
                 ? formatInstanceDate(event.instanceDate)
@@ -173,7 +173,7 @@ const EventDialog = ({
                 original_start_time: instanceDate,
             });
         } else {
-            // 修改所有實例 - 更新主事件
+            // Modify all instances - update main event
             const id = event?.originalId || event?.id;
             onSave({
                 ...formData,
@@ -262,7 +262,7 @@ const EventDialog = ({
                             </Grid>
                         </Grid>
 
-                        {/* 重複設定 - 只有非例外的事件才能設定 */}
+                        {/* Repeat settings - only non-exception events can set this */}
                         {!isException && (
                             <FormControl fullWidth>
                                 <InputLabel>Repeat</InputLabel>
@@ -285,7 +285,7 @@ const EventDialog = ({
                             </FormControl>
                         )}
 
-                        {/* 顯示自訂重複規則描述 */}
+                        {/* Display custom recurrence rule description */}
                         {formData.rrule && selectedRecurrence === 'custom' && (
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                 <Chip
@@ -356,7 +356,7 @@ const EventDialog = ({
                 open={recurrenceDialogOpen}
                 onClose={() => {
                     setRecurrenceDialogOpen(false);
-                    // 如果取消且沒有設定過 rrule，回到「不重複」
+                    // If cancelled and no rrule set, return to "Does not repeat"
                     if (!formData.rrule) {
                         setSelectedRecurrence('');
                     }

@@ -1,4 +1,4 @@
-# MySimpleCalendar
+# bh-simple-calendar
 
 一個簡潔優雅的日曆應用程式，使用 React 建構。所有資料都儲存在瀏覽器的 IndexedDB 中 - 不需要後端伺服器！
 
