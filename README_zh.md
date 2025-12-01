@@ -2,6 +2,10 @@
 
 一個簡潔優雅的日曆應用程式，使用 React 建構。所有資料都儲存在瀏覽器的 IndexedDB 中 - 不需要後端伺服器！
 
+![截圖](./README/illustration.png)
+
+🔗 **線上 Demo：** [https://bh-simple-calendar.web.app/](https://bh-simple-calendar.web.app/)
+
 ## ✨ 功能特色
 
 - 📅 **月曆檢視** - 乾淨直觀的日曆介面

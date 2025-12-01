@@ -2,6 +2,10 @@
 
 A simple and elegant calendar application built with React. All data is stored locally in the browser using IndexedDB - no backend server required!
 
+![Screenshot](./README/illustration.png)
+
+🔗 **Live Demo:** [https://bh-simple-calendar.web.app/](https://bh-simple-calendar.web.app/)
+
 ## ✨ Features
 
 - 📅 **Monthly Calendar View** - Clean and intuitive calendar interface
