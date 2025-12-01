@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Box, CssBaseline, ThemeProvider, CircularProgress } from '@mui/material';
+import { Box, CssBaseline, ThemeProvider, CircularProgress, Typography } from '@mui/material';
 import { addMonths, subMonths } from 'date-fns';
 import theme from './theme';
-import { calendarsAPI, eventsAPI } from './services/api';
+import { calendarsAPI, eventsAPI, initializeDatabase } from './services/api';
 
 // Components
 import CalendarHeader from './components/Calendar/CalendarHeader';
@@ -16,15 +16,35 @@ function App() {
   const [view, setView] = useState('month');
   const [calendars, setCalendars] = useState([]);
   const [events, setEvents] = useState([]);
+  const [exceptions, setExceptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [dbInitialized, setDbInitialized] = useState(false);
+  const [initError, setInitError] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [selectedDate, setSelectedDate] = useState(null);
 
-  // Initial data fetch
+  // 初始化 IndexedDB
   useEffect(() => {
-    fetchCalendars();
+    const initDB = async () => {
+      try {
+        await initializeDatabase();
+        setDbInitialized(true);
+      } catch (error) {
+        console.error('Failed to initialize database:', error);
+        setInitError(error.message);
+        setLoading(false);
+      }
+    };
+    initDB();
   }, []);
+
+  // 資料庫初始化後載入日曆
+  useEffect(() => {
+    if (dbInitialized) {
+      fetchCalendars();
+    }
+  }, [dbInitialized]);
 
   // Fetch events when date or calendars change
   useEffect(() => {
@@ -47,10 +67,18 @@ function App() {
 
   const fetchEvents = async () => {
     try {
-      // Get all events and filter client-side for now
-      // In a real app, we'd pass date range to API
-      const response = await eventsAPI.getAll();
-      setEvents(response.data);
+      // Get all events including exceptions
+      const response = await eventsAPI.getAll({ include_exceptions: true });
+      
+      // API 現在返回 { events, exceptions } 格式
+      if (response.data.events && response.data.exceptions) {
+        setEvents(response.data.events);
+        setExceptions(response.data.exceptions);
+      } else {
+        // 向後兼容：如果 API 返回舊格式
+        setEvents(Array.isArray(response.data) ? response.data : []);
+        setExceptions([]);
+      }
     } catch (error) {
       console.error('Error fetching events:', error);
     }
@@ -115,10 +143,31 @@ function App() {
     }
   };
 
-  const handleDeleteEvent = async (id) => {
-    if (window.confirm('Are you sure you want to delete this event?')) {
+  // 儲存例外實例（只修改這一天）
+  const handleSaveException = async (parentId, exceptionData) => {
+    try {
+      await eventsAPI.createException(parentId, exceptionData);
+      fetchEvents();
+      setDialogOpen(false);
+    } catch (error) {
+      console.error('Error saving exception:', error);
+    }
+  };
+
+  // 刪除事件（支援不同的刪除類型）
+  const handleDeleteEvent = async (id, deleteType = 'all', instanceDate = null) => {
+    const confirmMessages = {
+      'this_only': 'Are you sure you want to delete this occurrence?',
+      'this_and_future': 'Are you sure you want to delete this and all future occurrences?',
+      'all': 'Are you sure you want to delete all occurrences of this event?'
+    };
+
+    if (window.confirm(confirmMessages[deleteType] || confirmMessages['all'])) {
       try {
-        await eventsAPI.delete(id);
+        await eventsAPI.delete(id, { 
+          delete_type: deleteType, 
+          instance_date: instanceDate 
+        });
         fetchEvents();
         setDialogOpen(false);
       } catch (error) {
@@ -132,6 +181,27 @@ function App() {
     const calendar = calendars.find(cal => cal.id === event.calendar_id);
     return calendar && calendar.visible;
   });
+
+  // Filter exceptions based on visible calendars
+  const visibleExceptions = exceptions.filter(exception => {
+    const calendar = calendars.find(cal => cal.id === exception.calendar_id);
+    return calendar && calendar.visible;
+  });
+
+  if (initError) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', height: '100vh', gap: 2 }}>
+          <Typography variant="h5" color="error">資料庫初始化失敗</Typography>
+          <Typography color="text.secondary">{initError}</Typography>
+          <Typography variant="body2" color="text.secondary">
+            請確保您的瀏覽器支援 IndexedDB 並允許本網站儲存資料
+          </Typography>
+        </Box>
+      </ThemeProvider>
+    );
+  }
 
   if (loading) {
     return (
@@ -166,6 +236,7 @@ function App() {
             <MonthView
               currentDate={currentDate}
               events={visibleEvents}
+              exceptions={visibleExceptions}
               onDateClick={handleDateClick}
               onEventClick={handleEventClick}
             />
@@ -176,6 +247,7 @@ function App() {
           open={dialogOpen}
           onClose={() => setDialogOpen(false)}
           onSave={handleSaveEvent}
+          onSaveException={handleSaveException}
           onDelete={handleDeleteEvent}
           event={selectedEvent}
           selectedDate={selectedDate}

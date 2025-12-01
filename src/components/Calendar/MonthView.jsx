@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Typography, Grid, Paper } from '@mui/material';
+import RepeatIcon from '@mui/icons-material/Repeat';
+import EditIcon from '@mui/icons-material/Edit';
 import {
     startOfMonth,
     endOfMonth,
@@ -11,8 +13,9 @@ import {
     isSameDay,
     isToday
 } from 'date-fns';
+import { expandEvents, getMonthViewRange } from '../../utils/rruleHelper';
 
-const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
+const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick }) => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(monthStart);
     const startDate = startOfWeek(monthStart);
@@ -25,8 +28,14 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
 
     const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+    // 展開重複事件（包含例外處理）
+    const expandedEvents = useMemo(() => {
+        const { start, end } = getMonthViewRange(currentDate);
+        return expandEvents(events, start, end, exceptions);
+    }, [events, exceptions, currentDate]);
+
     const getEventsForDay = (date) => {
-        return events.filter(event => {
+        return expandedEvents.filter(event => {
             const eventStart = new Date(event.start_time);
             return isSameDay(eventStart, date);
         });
@@ -110,12 +119,25 @@ const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
                                             fontSize: '0.75rem',
                                             borderRadius: 1,
                                             boxShadow: 'none',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 0.5,
+                                            // 例外事件顯示不同樣式
+                                            border: event.isException ? '2px dashed rgba(255,255,255,0.5)' : 'none',
                                             '&:hover': {
                                                 filter: 'brightness(0.9)'
                                             }
                                         }}
                                     >
-                                        {event.title}
+                                        {/* 顯示重複圖示或例外圖示 */}
+                                        {event.isException ? (
+                                            <EditIcon sx={{ fontSize: '0.75rem', flexShrink: 0 }} />
+                                        ) : (event.rrule || event.isRecurringInstance) && (
+                                            <RepeatIcon sx={{ fontSize: '0.75rem', flexShrink: 0 }} />
+                                        )}
+                                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {event.title}
+                                        </span>
                                     </Paper>
                                 ))}
                                 {dayEvents.length > 3 && (

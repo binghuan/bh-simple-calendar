@@ -1,72 +1,179 @@
 # MySimpleCalendar
 
-MySimpleCalendar is a full-stack web application designed to be a simple, lightweight clone of a calendar service like Google Calendar. It features a modern React frontend and a choice of backend APIs.
+A simple and elegant calendar application built with React. All data is stored locally in the browser using IndexedDB - no backend server required!
 
-## Project Structure
+## ✨ Features
 
-This monorepo contains three main projects:
+- 📅 **Monthly Calendar View** - Clean and intuitive calendar interface
+- 🔄 **Recurring Events** - Support for daily, weekly, monthly, and yearly recurring events using RRule
+- ✏️ **Exception Handling** - Edit or delete individual occurrences of recurring events (like Google Calendar)
+- 🎨 **Multiple Calendars** - Create and manage multiple calendars with different colors
+- 💾 **Local Storage** - All data stored in browser's IndexedDB, works offline
+- 📤 **Export/Import** - Backup and restore your calendar data
 
--   `client/`: A React single-page application built with Vite that provides the user interface.
--   `server/`: A RESTful API backend built with Node.js, Express, and SQLite.
--   `server_ruby_on_rails/`: An alternative RESTful API backend built with Ruby on Rails. *(Work in Progress)*
+## 🛠️ Tech Stack
+
+- React 19
+- Vite 7
+- Material-UI (MUI) 7
+- date-fns
+- RRule (recurring events)
+- IndexedDB (local storage)
+
+## �� Quick Start
+
+### Install Dependencies
+
+```bash
+npm install
+# or
+yarn install
+```
+
+### Start Development Server
+
+```bash
+npm run dev
+# or
+yarn dev
+```
+
+The development server will start at http://localhost:5173 by default.
+
+### Build for Production
+
+```bash
+npm run build
+# or
+yarn build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+# or
+yarn preview
+```
+
+### Lint Code
+
+```bash
+npm run lint
+# or
+yarn lint
+```
+
+## 📁 Project Structure
+
+```
+MySimpleCalendar/
+├── public/              # Static assets
+├── src/
+│   ├── components/      # React components
+│   │   ├── Calendar/    # Calendar view components
+│   │   ├── Events/      # Event dialog components
+│   │   └── Sidebar/     # Sidebar components
+│   ├── services/        # API and database services
+│   │   ├── api.js       # API layer using IndexedDB
+│   │   └── db.js        # IndexedDB operations
+│   ├── utils/           # Utility functions
+│   │   └── rruleHelper.js  # RRule utilities
+│   ├── App.jsx          # Main application component
+│   └── main.jsx         # Application entry point
+├── index.html
+├── package.json
+└── vite.config.js
+```
+
+## 🗄️ Database Schema (IndexedDB)
+
+### Calendars Store
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Number | Primary key (auto-increment) |
+| `name` | String | Calendar name |
+| `color` | String | Display color (hex code, e.g., `#1976d2`) |
+| `description` | String | Calendar description |
+| `created_at` | String | Creation timestamp (ISO 8601) |
+| `updated_at` | String | Last update timestamp (ISO 8601) |
+
+### Events Store
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | Number | Primary key (auto-increment) |
+| `calendar_id` | Number | Foreign key to calendars |
+| `title` | String | Event title |
+| `description` | String | Event description |
+| `start_time` | String | Start time (ISO 8601) |
+| `end_time` | String | End time (ISO 8601) |
+| `all_day` | Number | All-day event flag (0 or 1) |
+| `location` | String | Event location |
+| `color` | String | Custom color (optional) |
+| `rrule` | String | RRule string for recurring events |
+| `exdates` | String | Excluded dates (comma-separated, e.g., `2025-01-15,2025-01-22`) |
+| `parent_event_id` | Number | Parent event ID for exception instances |
+| `original_start_time` | String | Original occurrence date for exceptions |
+| `created_at` | String | Creation timestamp |
+| `updated_at` | String | Last update timestamp |
+
+**Indexes:**
+- `calendar_id` - For filtering events by calendar
+- `start_time` - For date range queries
+- `parent_event_id` - For finding exception instances
+
+## 🔄 Recurring Events (RRule)
+
+This application uses the [RRule](https://github.com/jakubroztocil/rrule) library to handle recurring events according to the iCalendar RFC 5545 specification.
+
+### How It Works
+
+1. **Single Database Record**: Each recurring event is stored as a single record with an `rrule` field
+2. **Client-Side Expansion**: The frontend expands the RRule to generate all occurrences within the visible date range
+3. **Efficient Storage**: No matter how many occurrences, only one record is stored
+
+### RRule Examples
+
+| Pattern | RRule String |
+|---------|--------------|
+| Daily | `FREQ=DAILY` |
+| Every weekday | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` |
+| Weekly on Monday | `FREQ=WEEKLY;BYDAY=MO` |
+| Monthly on the 15th | `FREQ=MONTHLY;BYMONTHDAY=15` |
+| Yearly on Jan 1st | `FREQ=YEARLY;BYMONTH=1;BYMONTHDAY=1` |
+| Daily until Dec 31 | `FREQ=DAILY;UNTIL=20251231` |
+| Daily, 10 times | `FREQ=DAILY;COUNT=10` |
+
+### Exception Handling
+
+When you edit or delete a single occurrence of a recurring event:
+
+1. **Delete single occurrence**: The date is added to `exdates` field
+2. **Edit single occurrence**: 
+   - The original date is added to parent's `exdates`
+   - A new exception record is created with `parent_event_id` and `original_start_time`
+3. **Delete this and future**: The RRule's `UNTIL` parameter is modified
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Recurring Event                          │
+│  rrule: "FREQ=WEEKLY;BYDAY=MO"                             │
+│  exdates: "2025-01-13,2025-01-20"                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+              ┌───────────────┴───────────────┐
+              ▼                               ▼
+┌─────────────────────────┐     ┌─────────────────────────┐
+│   Exception Instance    │     │   Exception Instance    │
+│   parent_event_id: 1    │     │   parent_event_id: 1    │
+│   original_start_time:  │     │   original_start_time:  │
+│   "2025-01-13"          │     │   "2025-01-20"          │
+│   title: "Modified..."  │     │   (deleted - no record) │
+└─────────────────────────┘     └─────────────────────────┘
+```
 
 ---
 
-## Getting Started
-
-To run this application, you will need to run the client and one of the server backends simultaneously.
-
-### Prerequisites
-
--   [Node.js](https://nodejs.org/) (v18 or later)
--   [npm](https://www.npmjs.com/)
--   For the Ruby on Rails server: [Ruby](https://www.ruby-lang.org/) and [Bundler](https://bundler.io/).
-
-### 1. Running the React Client
-
-The client is the user interface for the calendar.
-
-```bash
-# Navigate to the client directory
-cd client
-
-# Install dependencies
-npm install
-
-# Run the development server
-npm run dev
-```
-
-The client will be available at `http://localhost:5173` (or another port if 5173 is in use).
-
-### 2. Running the Node.js Server
-
-This is the primary, fully functional backend for the application.
-
-```bash
-# Navigate to the Node.js server directory
-cd server
-
-# Install dependencies
-npm install
-
-# Create and seed the database
-npm run migrate
-npm run seed
-
-# Run the server
-npm run dev
-```
-
-The API will be available at `http://localhost:3001` (by default). The client is pre-configured to communicate with this server.
-
-### 3. Running the Ruby on Rails Server (Optional)
-
-This is an alternative backend that is currently under development.
-
-```bash
-# Navigate to the Ruby on Rails server directory
-cd server_ruby_on_rails
-
-# (Further setup instructions will be added once development is complete)
-```
+[中文說明](./README_zh.md)
