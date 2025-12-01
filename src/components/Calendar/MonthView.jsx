@@ -30,8 +30,16 @@ const MonthView = ({ currentDate, events, exceptions, onDateClick, onEventClick 
 
     // Expand recurring events (including exception handling)
     const expandedEvents = useMemo(() => {
+        console.log('[MonthView] Input events:', events);
+        console.log('[MonthView] Input events with rrule:', events.filter(e => e.rrule));
+        console.log('[MonthView] Input exceptions:', exceptions);
+        
         const { start, end } = getMonthViewRange(currentDate);
-        return expandEvents(events, start, end, exceptions);
+        console.log('[MonthView] Date range:', { start: start.toString(), end: end.toString() });
+        
+        const result = expandEvents(events, start, end, exceptions);
+        console.log('[MonthView] Expanded events:', result);
+        return result;
     }, [events, exceptions, currentDate]);
 
     const getEventsForDay = (date) => {

@@ -55,9 +55,14 @@ export const eventsAPI = {
     getAll: async (params = {}) => {
         let events = await eventsStore.getAll();
         
+        console.log('[Event API] getAll - Raw events from DB:', events);
+        
         // Separate parent events and exception instances
         const parentEvents = events.filter(e => !e.parent_event_id);
         const exceptions = events.filter(e => e.parent_event_id);
+        
+        console.log('[Event API] getAll - Parent events:', parentEvents);
+        console.log('[Event API] getAll - Exceptions:', exceptions);
         
         // Filter by parameters
         let filteredEvents = parentEvents;
@@ -93,10 +98,17 @@ export const eventsAPI = {
     },
     
     create: async (eventData) => {
+        console.log('[Event API] Creating event with data:', eventData);
+        console.log('[Event API] start_time:', eventData.start_time);
+        console.log('[Event API] end_time:', eventData.end_time);
+        console.log('[Event API] rrule:', eventData.rrule);
+        
         const data = await eventsStore.add({
             ...eventData,
             all_day: eventData.all_day ? 1 : 0
         });
+        
+        console.log('[Event API] Event created:', data);
         return { data };
     },
     

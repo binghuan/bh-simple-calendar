@@ -134,6 +134,49 @@ This application uses the [RRule](https://github.com/jakubroztocil/rrule) librar
 2. **Client-Side Expansion**: The frontend expands the RRule to generate all occurrences within the visible date range
 3. **Efficient Storage**: No matter how many occurrences, only one record is stored
 
+### Architecture: Client-Side Expansion
+
+This application uses **client-side expansion** for recurring events. Here's how it compares to alternative approaches:
+
+```
+┌─────────────────┐
+│   IndexedDB     │
+│                 │
+│  1 record       │      Only the rule is stored,
+│  rrule=DAILY    │      not individual instances
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ expandEvents()  │      RRule library calculates
+│                 │      all occurrences within
+│ Uses RRule lib  │      the visible date range
+│ to calculate    │
+│ occurrences     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   MonthView     │
+│                 │      Displays N event instances
+│  12/1 ✓ event   │      (generated on-the-fly)
+│  12/2 ✓ event   │
+│  12/3 ✓ event   │
+│  ...            │
+└─────────────────┘
+```
+
+#### Comparison of Approaches
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| **Client-side expansion (this app)** | Low bandwidth, light server load, works offline | Client needs RRule support, timezone handling required |
+| **Server-side expansion** | Simple client, consistent timezone handling | High bandwidth, heavy server load, requires date range |
+
+**Industry Examples:**
+- Google Calendar API & Microsoft Graph API use client-side expansion (return RRule, client expands)
+- Some enterprise systems use server-side expansion for simplicity
+
 ### RRule Examples
 
 | Pattern | RRule String |

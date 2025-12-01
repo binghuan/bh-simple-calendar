@@ -117,6 +117,40 @@ function normalizeDateForComparison(date) {
 }
 
 /**
+ * Convert local date to "fake UTC" date for RRule
+ * RRule has timezone issues - it treats dates as UTC internally.
+ * This function creates a date that "looks like" the local time in UTC.
+ * @param {Date} localDate - Local date
+ * @returns {Date} Fake UTC date
+ */
+function toFakeUTC(localDate) {
+    return new Date(Date.UTC(
+        localDate.getFullYear(),
+        localDate.getMonth(),
+        localDate.getDate(),
+        localDate.getHours(),
+        localDate.getMinutes(),
+        localDate.getSeconds()
+    ));
+}
+
+/**
+ * Convert "fake UTC" date back to local date
+ * @param {Date} fakeUTCDate - Fake UTC date from RRule
+ * @returns {Date} Local date
+ */
+function fromFakeUTC(fakeUTCDate) {
+    return new Date(
+        fakeUTCDate.getUTCFullYear(),
+        fakeUTCDate.getUTCMonth(),
+        fakeUTCDate.getUTCDate(),
+        fakeUTCDate.getUTCHours(),
+        fakeUTCDate.getUTCMinutes(),
+        fakeUTCDate.getUTCSeconds()
+    );
+}
+
+/**
  * Expand recurring event (considering exdates and exception instances)
  * @param {object} event - Event object
  * @param {Date} rangeStart - Range start date
@@ -146,14 +180,25 @@ export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = [
             return [event];
         }
 
-        // Set dtstart
+        // IMPORTANT: RRule has timezone issues. It internally uses UTC.
+        // To work around this, we convert local times to "fake UTC" dates,
+        // where the UTC values match the local time values.
+        const fakeUTCStart = toFakeUTC(eventStart);
+        
         const rule = new RRule({
             ...rruleOptions,
-            dtstart: eventStart,
+            dtstart: fakeUTCStart,
         });
 
-        // Get all dates within range
-        const occurrences = rule.between(rangeStart, rangeEnd, true);
+        // Convert range to fake UTC as well, with some buffer
+        const fakeUTCRangeStart = toFakeUTC(rangeStart);
+        const fakeUTCRangeEnd = toFakeUTC(rangeEnd);
+
+        // Get all dates within range (in fake UTC)
+        const fakeUTCOccurrences = rule.between(fakeUTCRangeStart, fakeUTCRangeEnd, true);
+        
+        // Convert back to local dates
+        const occurrences = fakeUTCOccurrences.map(d => fromFakeUTC(d));
 
         // Create exception map (using normalized date string as key)
         const exceptionMap = new Map();
