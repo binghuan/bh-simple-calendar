@@ -152,37 +152,37 @@ export function expandRecurringEvent(event, rangeStart, rangeEnd, exceptions = [
         for (const occurrence of occurrences) {
             // 檢查是否被排除
             if (isDateExcluded(occurrence, exdates)) {
+                // 檢查是否有對應的例外實例（被編輯而非刪除）
+                const exception = eventExceptions.find(ex => {
+                    const originalStart = new Date(ex.original_start_time);
+                    return isSameDay(originalStart, occurrence);
+                });
+
+                if (exception) {
+                    // 使用例外實例
+                    instances.push({
+                        ...exception,
+                        isRecurringInstance: true,
+                        isException: true,
+                        parentEvent: event,
+                        instanceDate: occurrence,
+                    });
+                }
+                // 如果沒有例外實例，表示該日期被刪除，不加入 instances
                 continue;
             }
 
-            // 檢查是否有例外實例
-            const exception = eventExceptions.find(ex => {
-                const originalStart = new Date(ex.original_start_time);
-                return isSameDay(originalStart, occurrence);
+            // 正常實例（未被排除的日期）
+            instances.push({
+                ...event,
+                id: `${event.id}_${occurrence.getTime()}`, // 使用複合 ID
+                originalId: event.id, // 保留原始 ID
+                start_time: occurrence.toISOString(),
+                end_time: new Date(occurrence.getTime() + duration).toISOString(),
+                isRecurringInstance: true,
+                isException: false,
+                instanceDate: occurrence,
             });
-
-            if (exception) {
-                // 使用例外實例
-                instances.push({
-                    ...exception,
-                    isRecurringInstance: true,
-                    isException: true,
-                    parentEvent: event,
-                    instanceDate: occurrence,
-                });
-            } else {
-                // 使用正常實例
-                instances.push({
-                    ...event,
-                    id: `${event.id}_${occurrence.getTime()}`, // 使用複合 ID
-                    originalId: event.id, // 保留原始 ID
-                    start_time: occurrence.toISOString(),
-                    end_time: new Date(occurrence.getTime() + duration).toISOString(),
-                    isRecurringInstance: true,
-                    isException: false,
-                    instanceDate: occurrence,
-                });
-            }
         }
 
         return instances;
