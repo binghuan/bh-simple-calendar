@@ -6,6 +6,27 @@ A simple and elegant calendar application built with React. All data is stored l
 
 🔗 **Live Demo:** [https://bh-simple-calendar.web.app/](https://bh-simple-calendar.web.app/)
 
+- [bh-simple-calendar](#bh-simple-calendar)
+  - [✨ Features](#-features)
+  - [🛠️ Tech Stack](#️-tech-stack)
+  - [Quick Start](#quick-start)
+    - [Install Dependencies](#install-dependencies)
+    - [Start Development Server](#start-development-server)
+    - [Build for Production](#build-for-production)
+    - [Preview Production Build](#preview-production-build)
+    - [Lint Code](#lint-code)
+  - [📁 Project Structure](#-project-structure)
+  - [🗄️ Database Schema (IndexedDB)](#️-database-schema-indexeddb)
+    - [Calendars Store](#calendars-store)
+    - [Events Store](#events-store)
+  - [🔄 Recurring Events (RRule)](#-recurring-events-rrule)
+    - [How It Works](#how-it-works)
+    - [Architecture: Client-Side Expansion](#architecture-client-side-expansion)
+      - [Comparison of Approaches](#comparison-of-approaches)
+    - [RRule Examples](#rrule-examples)
+    - [Exception Handling](#exception-handling)
+
+
 ## ✨ Features
 
 - 📅 **Monthly Calendar View** - Clean and intuitive calendar interface
@@ -24,7 +45,7 @@ A simple and elegant calendar application built with React. All data is stored l
 - RRule (recurring events)
 - IndexedDB (local storage)
 
-## �� Quick Start
+## Quick Start
 
 ### Install Dependencies
 
